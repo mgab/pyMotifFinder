@@ -5,6 +5,7 @@ syntax: glob
 *~
 *.swp
 *.cp
+.ipynb_checkpoints
 
 ### switch to regexp syntax.
 syntax: regexp
