@@ -53,19 +53,36 @@ def enumerate_subgraphs(graph, seed_nodes=None, size=3):
     on Computational Biology and Bioinformatics, 2006. doi:10.1109/TCBB.2006.51
     """
     if seed_nodes is None:
-        neighbors = xrange(graph.order())
         seed_nodes = []
-    else:
-        max_nodes = max(seed_nodes)
-        neighbors = (ngbr for nod in seed_nodes
-                     for ngbr in graph.predecessors(nod)+graph.successors(nod)
-                     if max_nodes < ngbr and ngbr not in seed_nodes)
 
+    # Change the node names for numerical labels (required by ESU)
+    node_mapping = dict(zip(graph.nodes(), range(graph.number_of_nodes())))
+    graph = nx.relabel_nodes(graph, node_mapping, copy=True)
+    seed_nodes = [node_mapping[n] for n in seed_nodes]
+
+    # Use a recurrent function to get each subgraph and change the names back
+    rev_node_mapping = {v: k for k, v in node_mapping.iteritems()}
+    del node_mapping
+    for subgraph in _enumerate_subgraphs(graph, seed_nodes=seed_nodes,
+                                         size=size):
+        yield [rev_node_mapping[n] for n in subgraph]
+
+
+def _enumerate_subgraphs(graph, seed_nodes, size):
+    """Private method to Enumerate SUbgraphs using a recursive approach."""
     if len(seed_nodes) == size:
         yield seed_nodes
     else:
+        if len(seed_nodes) == 0:
+            neighbors = xrange(graph.order())
+        else:
+            max_node = max(seed_nodes)
+            neighbors = (ngbr for n in seed_nodes
+                         for ngbr in graph.predecessors(n)+graph.successors(n)
+                         if max_node < ngbr and ngbr not in seed_nodes)
+
         for ngbr in neighbors:
-            for result in enumerate_subgraphs(graph, seed_nodes+[ngbr], size):
+            for result in _enumerate_subgraphs(graph, seed_nodes+[ngbr], size):
                 yield result
 
 
@@ -164,9 +181,6 @@ def find_motifs_slow(graph, size=3, min_occurrences=5,  rand_networks=1000,
         Pseudo Random Number Generator. If not provided is taken from the
         `random` module.
     """
-    node_mapping = dict(zip(sorted(graph.nodes()), range(graph.order())))
-    graph = nx.relabel_nodes(graph, node_mapping, copy=True)
-
     all_subgraphs_iter = enumerate_subgraphs(graph, size=size)
     motifs = count_unique_topologies((graph.subgraph(sub)
                                       for sub in all_subgraphs_iter))
@@ -218,9 +232,6 @@ def find_motifs(graph, size=3, min_occurrences=5,  rand_networks=1000,
         Print the number of randomized networks processed every `ping_every`
         networks. If equal to 0 or False nothing is printed.
     """
-    node_mapping = dict(zip(sorted(graph.nodes()), range(graph.order())))
-    graph = nx.relabel_nodes(graph, node_mapping, copy=True)
-
     all_subgraphs_iter = enumerate_subgraphs(graph, size=size)
     motifs = count_unique_topologies((graph.subgraph(sub)
                                       for sub in all_subgraphs_iter))
