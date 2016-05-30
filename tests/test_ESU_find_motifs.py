@@ -7,7 +7,7 @@ import random
 
 import networkx as nx
 
-from ESU import *
+from pyMotifFinder import *
 
 class EnumerateSubgraphsTests(ut.TestCase):
     def setUp(self):
